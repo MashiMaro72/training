@@ -1,51 +1,39 @@
 // create web server
-var http = require('http');
-var fs = require('fs');
-var url = require('url');
+//==========================
+const http = require('http');
+const fs = require('fs');
+const path = require('path');
+const comments = require('./comments.json');
 
-var comments = [];
-
-var server = http.createServer(function(request, response) {
-    var parseObj = url.parse(request.url, true);
-    var pathName = parseObj.pathname;
-    if (pathName === '/') {
-        fs.readFile('./views/index.html', function(err, data) {
-            if (err) {
-                return response.end('404 Not Found.');
-            }
-            response.end(data);
-        });
-    } else if (pathName === '/post') {
-        fs.readFile('./views/post.html', function(err, data) {
-            if (err) {
-                return response.end('404 Not Found.');
-            }
-            response.end(data);
-        });
-    } else if (pathName.indexOf('/public/') === 0) {
-        fs.readFile('.' + pathName, function(err, data) {
-            if (err) {
-                return response.end('404 Not Found.');
-            }
-            response.end(data);
-        });
-    } else if (pathName === '/comment') {
-        var comment = parseObj.query;
-        comment.dateTime = '2018-12-20 15:24:00';
-        comments.push(comment);
-        response.statusCode = 302;
-        response.setHeader('Location', '/');
-        response.end();
-    } else {
-        fs.readFile('./views/404.html', function(err, data) {
-            if (err) {
-                return response.end('404 Not Found.');
-            }
-            response.end(data);
-        });
-    }
+const server = http.createServer((req, res) => {
+  if (req.method === 'GET' && req.url === '/comments') {
+    res.writeHead(200, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify(comments));
+  } else if (req.method === 'POST' && req.url === '/comments') {
+    let body = '';
+    req.on('data', (chunk) => {
+      body += chunk;
+    });
+    req.on('end', () => {
+      const comment = JSON.parse(body);
+      comments.push(comment);
+      fs.writeFile(path.join(__dirname, 'comments.json'), JSON.stringify(comments), (err) => {
+        if (err) {
+          console.error(err);
+          res.writeHead(500, { 'Content-Type': 'text/plain' });
+          res.end('Internal Server Error');
+        } else {
+          res.writeHead(201, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify(comment));
+        }
+      });
+    });
+  } else {
+    res.writeHead(404, { 'Content-Type': 'text/plain' });
+    res.end('Not Found');
+  }
 });
 
-server.listen(3000, function() {
-    console.log('Server is running...');
+server.listen(3000, () => {
+  console.log('Server is running on http://localhost:3000');
 });
