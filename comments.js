@@ -1,9 +1,14 @@
 // create web server
 //==========================
 import http from 'http';
-const fs = require('fs');
-const path = require('path');
-const comments = require('./comments.json');
+import fs from 'fs';
+import path from 'path';
+import { fileURLToPath } from 'url';
+import { dirname } from 'path';
+import comments from './comments.json' assert { type: 'json' };
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
 
 const server = http.createServer((req, res) => {
   if (req.method === 'GET' && req.url === '/comments') {
